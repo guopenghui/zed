@@ -185,7 +185,7 @@ impl LspAdapter for RustLspAdapter {
         let destination_path = container_dir.join(format!("rust-analyzer-{}", version.name));
         let server_path = match Self::GITHUB_ASSET_KIND {
             AssetKind::TarGz | AssetKind::Gz => destination_path.clone(), // Tar and gzip extract in place.
-            AssetKind::Zip => destination_path.clone().join("rust-analyzer.exe"), // zip contains a .exe
+            AssetKind::Zip => destination_path.clone().with_extension("exe"), // zip contains a .exe
         };
 
         if fs::metadata(&server_path).await.is_err() {
@@ -225,6 +225,19 @@ impl LspAdapter for RustLspAdapter {
                         .await
                         .with_context(|| {
                             format!("unzipping {} to {:?}", version.url, destination_path)
+                        })?;
+
+                    let exe_path = destination_path.join("rust-analyzer.exe");
+                    fs::rename(&exe_path, &server_path)
+                        .await
+                        .with_context(|| {
+                            format!("move {:?} to {:?}", exe_path, server_path)
+                        })?;
+
+                    fs::remove_dir_all(&destination_path)
+                        .await
+                        .with_context(|| {
+                            format!("remove directory {:?}", destination_path)
                         })?;
                 }
             };
