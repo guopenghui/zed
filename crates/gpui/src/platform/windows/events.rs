@@ -381,7 +381,7 @@ impl WindowsWindowInner {
             .with_input_handler(|input_handler| input_handler.marked_text_range())
             .flatten()
             .is_some();
-        if is_composing {
+        if VIRTUAL_KEY(wparam.loword()) == VK_PROCESSKEY || is_composing {
             translate_message(handle, wparam, lparam);
             return Some(0);
         }
