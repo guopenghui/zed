@@ -156,6 +156,7 @@ members = [
     "crates/prettier",
     "crates/project",
     "crates/project_benchmarks",
+    "crates/project_bookmarks",
     "crates/project_panel",
     "crates/project_symbols",
     "crates/prompt_store",
@@ -417,6 +418,7 @@ picker = { path = "crates/picker" }
 prettier = { path = "crates/prettier" }
 settings_profile_selector = { path = "crates/settings_profile_selector" }
 project = { path = "crates/project" }
+project_bookmarks = { path = "crates/project_bookmarks" }
 project_panel = { path = "crates/project_panel" }
 project_symbols = { path = "crates/project_symbols" }
 prompt_store = { path = "crates/prompt_store" }
@@ -955,6 +957,7 @@ ollama = { codegen-units = 1 }
 outline = { codegen-units = 1 }
 paths = { codegen-units = 1 }
 prettier = { codegen-units = 1 }
+project_bookmarks = { codegen-units = 1 }
 project_symbols = { codegen-units = 1 }
 refineable = { codegen-units = 1 }
 release_channel = { codegen-units = 1 }

@@ -28597,7 +28597,7 @@ impl BookmarkTestContext {
                 .get(&abs_path)
                 .unwrap()
                 .iter()
-                .map(|b| b.0)
+                .map(|b| b.row)
                 .collect();
             rows.sort();
             assert_eq!(expected_rows, rows);
@@ -28635,6 +28635,13 @@ impl BookmarkTestContext {
             });
     }
 
+    fn toggle_named_bookmark(&mut self) {
+        self.editor
+            .update_in(&mut self.cx, |editor: &mut Editor, window, cx| {
+                editor.toggle_named_bookmark(&actions::ToggleNamedBookmark, window, cx);
+            });
+    }
+
     fn toggle_bookmarks_at_rows(&mut self, rows: &[u32]) {
         for &row in rows {
             self.move_to_row(row);
@@ -28655,6 +28662,38 @@ impl BookmarkTestContext {
                 editor.go_to_previous_bookmark(&actions::GoToPreviousBookmark, window, cx);
             });
     }
+}
+
+#[gpui::test]
+async fn test_bookmark_toggling_uses_empty_name(cx: &mut TestAppContext) {
+    let mut ctx =
+        BookmarkTestContext::new("First line\nSecond line\nThird line\nFourth line", cx).await;
+
+    ctx.toggle_bookmark();
+
+    let abs_path = ctx.abs_path();
+    let bookmarks = ctx.all_bookmarks();
+    let file_bookmarks = bookmarks.get(&abs_path).unwrap();
+    assert_eq!(file_bookmarks.len(), 1);
+    assert_eq!(file_bookmarks[0].row, 0);
+    assert_eq!(file_bookmarks[0].name, "");
+
+    ctx.toggle_bookmark();
+
+    ctx.assert_bookmark_rows(vec![]);
+}
+
+#[gpui::test]
+async fn test_named_bookmark_toggle_removes_unnamed_bookmark(cx: &mut TestAppContext) {
+    let mut ctx =
+        BookmarkTestContext::new("First line\nSecond line\nThird line\nFourth line", cx).await;
+
+    ctx.toggle_bookmark();
+    ctx.assert_bookmark_rows(vec![0]);
+
+    ctx.toggle_named_bookmark();
+
+    ctx.assert_bookmark_rows(vec![]);
 }
 
 #[gpui::test]

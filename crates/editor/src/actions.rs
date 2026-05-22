@@ -832,8 +832,15 @@ actions!(
         Tab,
         /// Removes a tab character or outdents.
         Backtab,
-        /// Toggles a bookmark at the current line.
+        /// Toggles an unnamed bookmark at the current line without prompting for a name.
         ToggleBookmark,
+        /// Toggles a named bookmark at the current line.
+        ///
+        /// When adding a new bookmark, this prompts for a name. When a bookmark already exists on
+        /// the current line, this removes it, even if the existing bookmark has no name.
+        ToggleNamedBookmark,
+        /// Edits the bookmark at the current line.
+        EditBookmark,
         /// Toggles a breakpoint at the current line.
         ToggleBreakpoint,
         /// Toggles the case of selected text.

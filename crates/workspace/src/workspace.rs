@@ -462,6 +462,15 @@ actions!(
     ]
 );
 
+actions!(
+    project_bookmarks,
+    [
+        /// Toggles the project bookmarks search.
+        #[action(name = "Toggle")]
+        ToggleProjectBookmarks
+    ]
+);
+
 /// Toggles the file finder interface.
 #[derive(Default, PartialEq, Eq, Clone, Deserialize, JsonSchema, Action)]
 #[action(namespace = file_finder, name = "Toggle")]
