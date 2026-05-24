@@ -200,6 +200,7 @@ impl Editor {
     fn toggle_bookmark_target(
         &mut self,
         target: BookmarkTarget,
+        prompt_for_name: bool,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
@@ -210,7 +211,7 @@ impl Editor {
         if Self::bookmark_exists_for_target(&bookmark_store, &target, cx) {
             self.toggle_bookmarks(vec![target], String::new(), cx);
         } else {
-            self.prompt_for_bookmark_name_or_toggle(vec![target], true, window, cx);
+            self.prompt_for_bookmark_name_or_toggle(vec![target], prompt_for_name, window, cx);
         }
 
         cx.notify();
@@ -227,7 +228,7 @@ impl Editor {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        self.toggle_bookmark_impl(false, window, cx);
+        self.toggle_bookmarks_in_editor(false, window, cx);
     }
 
     pub fn toggle_named_bookmark(
@@ -236,10 +237,10 @@ impl Editor {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        self.toggle_bookmark_impl(true, window, cx);
+        self.toggle_bookmarks_in_editor(true, window, cx);
     }
 
-    fn toggle_bookmark_impl(
+    fn toggle_bookmarks_in_editor(
         &mut self,
         prompt_for_name: bool,
         window: &mut Window,
@@ -294,6 +295,7 @@ impl Editor {
     pub fn toggle_bookmark_at_row(
         &mut self,
         row: DisplayRow,
+        prompt_for_name: bool,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
@@ -302,26 +304,13 @@ impl Editor {
         let buffer_snapshot = self.buffer.read(cx).snapshot(cx);
         let anchor = buffer_snapshot.anchor_before(point);
 
-        let Some((position, _)) = buffer_snapshot.anchor_to_buffer_anchor(anchor) else {
-            return;
-        };
-        let Some(buffer) = self.buffer.read(cx).buffer(position.buffer_id) else {
-            return;
-        };
-
-        self.toggle_bookmark_target(
-            BookmarkTarget {
-                buffer,
-                anchor: position,
-            },
-            window,
-            cx,
-        );
+        self.toggle_bookmark_at_anchor(anchor, prompt_for_name, window, cx);
     }
 
     pub fn toggle_bookmark_at_anchor(
         &mut self,
         anchor: Anchor,
+        prompt_for_name: bool,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
@@ -338,19 +327,13 @@ impl Editor {
                 buffer,
                 anchor: position,
             },
+            prompt_for_name,
             window,
             cx,
         );
     }
 
     pub fn edit_bookmark(&mut self, _: &EditBookmark, window: &mut Window, cx: &mut Context<Self>) {
-        let Some(bookmark_store) = self.bookmark_store.clone() else {
-            return;
-        };
-        let Some(project) = self.project() else {
-            return;
-        };
-
         let snapshot = self.snapshot(window, cx);
         let editor_buffer_snapshot = snapshot.buffer_snapshot();
         let selection = self
@@ -358,8 +341,24 @@ impl Editor {
             .newest::<Point>(&snapshot.display_snapshot)
             .head();
         let multibuffer_anchor = editor_buffer_snapshot.anchor_before(Point::new(selection.row, 0));
-        let Some((buffer_anchor, _)) =
-            editor_buffer_snapshot.anchor_to_buffer_anchor(multibuffer_anchor)
+        self.edit_bookmark_at_anchor(multibuffer_anchor, window, cx);
+    }
+
+    pub fn edit_bookmark_at_anchor(
+        &mut self,
+        anchor: Anchor,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let Some(bookmark_store) = self.bookmark_store.clone() else {
+            return;
+        };
+        let Some(project) = self.project() else {
+            return;
+        };
+
+        let editor_buffer_snapshot = self.buffer.read(cx).snapshot(cx);
+        let Some((buffer_anchor, _)) = editor_buffer_snapshot.anchor_to_buffer_anchor(anchor)
         else {
             return;
         };

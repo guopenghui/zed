@@ -3901,7 +3901,7 @@ impl Editor {
             .icon_color(Color::Info)
             .style(ButtonStyle::Transparent)
             .on_click(cx.listener(move |editor, _, window, cx| {
-                editor.toggle_bookmark_at_row(row, window, cx);
+                editor.toggle_bookmark_at_row(row, false, window, cx);
             }))
             .on_right_click(cx.listener(move |editor, event: &ClickEvent, window, cx| {
                 editor.set_gutter_context_menu(row, None, event.position(), window, cx);
@@ -4033,6 +4033,7 @@ impl Editor {
         } else {
             "Add Bookmark"
         };
+        let has_bookmark = bookmark.as_ref().is_some();
 
         let run_to_cursor = window.is_action_available(&RunToCursor, cx);
 
@@ -4151,12 +4152,39 @@ impl Editor {
                     }
                 })
                 .separator()
-                .entry(set_bookmark_msg, None, move |window, cx| {
-                    weak_editor
-                        .update(cx, |this, cx| {
-                            this.toggle_bookmark_at_anchor(anchor, window, cx);
-                        })
-                        .log_err();
+                .entry(set_bookmark_msg, Some(Box::new(ToggleBookmark)), {
+                    let weak_editor = weak_editor.clone();
+                    move |window, cx| {
+                        weak_editor
+                            .update(cx, |this, cx| {
+                                this.toggle_bookmark_at_anchor(anchor, false, window, cx);
+                            })
+                            .log_err();
+                    }
+                })
+                .when(!has_bookmark, |this| {
+                    this.entry("Add Named Bookmark", Some(Box::new(ToggleNamedBookmark)), {
+                        let weak_editor = weak_editor.clone();
+                        move |window, cx| {
+                            weak_editor
+                                .update(cx, |this, cx| {
+                                    this.toggle_bookmark_at_anchor(anchor, true, window, cx);
+                                })
+                                .log_err();
+                        }
+                    })
+                })
+                .when(has_bookmark, |this| {
+                    this.entry("Edit Bookmark", Some(Box::new(EditBookmark)), {
+                        let weak_editor = weak_editor.clone();
+                        move |window, cx| {
+                            weak_editor
+                                .update(cx, |this, cx| {
+                                    this.edit_bookmark_at_anchor(anchor, window, cx);
+                                })
+                                .log_err();
+                        }
+                    })
                 })
         })
     }
@@ -4336,7 +4364,9 @@ impl Editor {
                     };
 
                     match intent {
-                        Intent::SetBookmark => editor.toggle_bookmark_at_row(row, window, cx),
+                        Intent::SetBookmark => {
+                            editor.toggle_bookmark_at_row(row, false, window, cx)
+                        }
                         Intent::SetBreakpoint => editor.edit_breakpoint_at_anchor(
                             position,
                             Breakpoint::new_standard(),
